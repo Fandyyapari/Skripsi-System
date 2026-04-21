@@ -28,3 +28,30 @@ exports.tambahJadwal = (req, res) => {
     );
   });
 };
+
+exports.updateJadwal = (req, res) => {
+  const id = req.params.id;
+  const { mahasiswa, tanggal, jam_mulai, jam_selesai } = req.body;
+
+  db.query(
+    "UPDATE jadwal SET mahasiswa=?, tanggal=?, jam_mulai=?, jam_selesai=? WHERE id=?",
+    [mahasiswa, tanggal, jam_mulai, jam_selesai, id],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Error update data" });
+      }
+      res.json({ message: "Berhasil diupdate!" });
+    }
+  );
+};
+
+exports.deleteJadwal = (req, res) => {
+  const id = req.params.id;
+
+  db.query("DELETE FROM jadwal WHERE id=?", [id], (err) => {
+    if (err) {
+      return res.status(500).json({ message: "Error delete data" });
+    }
+    res.json({ message: "Berhasil dihapus!" });
+  });
+};
