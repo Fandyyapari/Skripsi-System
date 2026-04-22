@@ -11,6 +11,11 @@ exports.tambahJadwal = (req, res) => {
   const { mahasiswa, tanggal, jam_mulai, jam_selesai } = req.body;
 
   db.query("SELECT * FROM jadwal", (err, rows) => {
+
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
     let bentrok = rows.some(j =>
       j.tanggal == tanggal &&
       jam_mulai < j.jam_selesai &&
