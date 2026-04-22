@@ -29,17 +29,17 @@ app.get("/health", (req, res) => {
 });
 
 // ========================================
-// ✅ ROUTE CRUD LENGKAP
+// ROUTE CRUD LENGKAP
 // ========================================
 
-// GET /jadwal - List semua (React butuh ini)
+// GET /jadwal - List semua jadwal
 app.get("/jadwal", (req, res) => {
   db.query("SELECT * FROM jadwal ORDER BY tanggal, jam_mulai", (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows); // ARRAY!
   });
 });
-// POST /jadwal - Create + Cek Bentrok (React butuh ini)
+// POST /jadwal - Create + Cek Bentrok
 app.post("/jadwal", (req, res) => {
   const { mahasiswa, tanggal, jam_mulai, jam_selesai } = req.body;
 
@@ -73,7 +73,7 @@ app.post("/jadwal", (req, res) => {
   });
 });
 
-// DELETE /jadwal/:id (React butuh ini)
+// DELETE /jadwal/:id - Hapus jadwal
 app.delete("/jadwal/:id", (req, res) => {
   const { id } = req.params;
   db.query("DELETE FROM jadwal WHERE id = ?", [id], (err, result) => {
