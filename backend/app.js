@@ -2,14 +2,18 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const db = require("./db");
+const authRoutes = require("./routes/authRoutes");
 
-const app = express();
+const app = express(); // ✅ HARUS DI ATAS
 
 // Middleware
 app.use(cors({
-  origin: "http://localhost:3001" // React port
+  origin: "http://localhost:3001"
 }));
 app.use(express.json());
+
+// ✅ BARU PASANG ROUTE
+app.use("/auth", authRoutes);
 
 // Homepage
 app.get("/", (req, res) => {
