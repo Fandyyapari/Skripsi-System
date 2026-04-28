@@ -1,5 +1,6 @@
-<<<<<<< HEAD
 function Login({ loginForm, onInputChange, onLoginSubmit, onQuickLogin }) {
+
+  
   const styles = {
     page: {
       minHeight: "100vh",
@@ -152,10 +153,8 @@ function Login({ loginForm, onInputChange, onLoginSubmit, onQuickLogin }) {
 
   return (
     <div style={styles.page}>
-      <div style={styles.background}>
-        <div style={styles.glow1}></div>
-        <div style={styles.glow2}></div>
-      </div>
+      <div style={styles.background}></div>
+
       <div style={styles.card}>
         <div style={styles.logoRow}>
           <div style={styles.emblem}>S</div>
@@ -164,138 +163,72 @@ function Login({ loginForm, onInputChange, onLoginSubmit, onQuickLogin }) {
             <span style={styles.brandSub}>UNESA — Teknik Informatika</span>
           </div>
         </div>
+
         <div style={styles.title}>Selamat Datang</div>
         <div style={styles.subtitle}>Sistem Administrasi Tugas Akhir / Skripsi</div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label} htmlFor="username">Username / NIM</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            placeholder="Masukkan username..."
-            value={loginForm.username}
-            onChange={onInputChange}
-            style={styles.input}
-            required
-          />
-        </div>
+        {/* 🔥 FORM START */}
+        <form onSubmit={onLoginSubmit}>
+          
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Username / NIM</label>
+            <input
+              type="text"
+              name="username"
+              value={loginForm.username}
+              onChange={onInputChange}
+              style={styles.input}
+              required
+            />
+          </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label} htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="••••••••"
-            value={loginForm.password}
-            onChange={onInputChange}
-            style={styles.input}
-            required
-          />
-        </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Password</label>
+            <input
+              type="password"
+              name="password"
+              value={loginForm.password}
+              onChange={onInputChange}
+              style={styles.input}
+              required
+            />
+          </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label} htmlFor="role">Login sebagai</label>
-          <select
-            id="role"
-            name="role"
-            value={loginForm.role}
-            onChange={onInputChange}
-            style={styles.select}
-          >
-            <option value="mahasiswa">Mahasiswa</option>
-            <option value="dosen">Dosen Pembimbing</option>
-            <option value="admin">Admin Prodi / TU</option>
-            <option value="kaprodi">Kepala Program Studi</option>
-          </select>
-        </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Login sebagai</label>
+            <select
+              name="role"
+              value={loginForm.role}
+              onChange={onInputChange}
+              style={styles.select}
+            >
+              <option value="mahasiswa">Mahasiswa</option>
+              <option value="dosen">Dosen</option>
+              <option value="admin">Admin</option>
+              <option value="kaprodi">Kaprodi</option>
+            </select>
+          </div>
 
-        <button type="submit" style={styles.button}>
-          Masuk ke Sistem →
-        </button>
+          <button type="submit" style={styles.button}>
+            Masuk ke Sistem →
+          </button>
+
+        </form>
+        {/* 🔥 FORM END */}
 
         <div style={styles.demoWrapper}>
           <p style={styles.demoText}>Demo cepat</p>
           <div style={styles.demoBtns}>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("mahasiswa")}> Mahasiswa</div>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("dosen")}> Dosen</div>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("admin")}> Admin</div>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("kaprodi")}> Kaprodi</div>
+            <div style={styles.demoBtn} onClick={() => onQuickLogin("mahasiswa")}>Mahasiswa</div>
+            <div style={styles.demoBtn} onClick={() => onQuickLogin("dosen")}>Dosen</div>
+            <div style={styles.demoBtn} onClick={() => onQuickLogin("admin")}>Admin</div>
+            <div style={styles.demoBtn} onClick={() => onQuickLogin("kaprodi")}>Kaprodi</div>
           </div>
         </div>
+
       </div>
-=======
-import { useState } from "react";
-
-function Login({ setUser }) {
-  const [form, setForm] = useState({
-    username: "",
-    password: ""
-  });
-
-  const [message, setMessage] = useState("");
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-
-    fetch("http://localhost:3000/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(form)
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setMessage("Login berhasil!");
-          localStorage.setItem("user", JSON.stringify(data.user));
-          setUser(data.user);
-        } else {
-          setMessage(data.message);
-        }
-      });
-  };
-
-  return (
-    <div style={{ textAlign: "center", marginTop: "100px" }}>
-      <h2>Login</h2>
-
-      <form onSubmit={handleLogin}>
-        <input
-          name="username"
-          placeholder="Username"
-          onChange={handleChange}
-        /><br /><br />
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          onChange={handleChange}
-        /><br /><br />
-
-        <button>Login</button>
-      </form>
-
-      {/* 🔥 PESAN */}
-      {message && (
-        <p style={{ marginTop: "15px", color: "red" }}>
-          {message}
-        </p>
-      )}
->>>>>>> 4e82f74caf3bcbd62c3eb2860e7db76391d2b5d4
     </div>
   );
 }
 
-<<<<<<< HEAD
 export default Login;
-=======
-export default Login;
->>>>>>> 4e82f74caf3bcbd62c3eb2860e7db76391d2b5d4
