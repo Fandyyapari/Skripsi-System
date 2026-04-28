@@ -1,6 +1,24 @@
 import { useEffect, useState } from "react";
+import Login from "./Login";
+import Dashboard from "./Dashboard";
+import Pengajuan from "./Pengajuan";
+import Bimbingan from "./Bimbingan";
+import Jadwal from "./Jadwal";
+import Dokumen from "./Dokumen";
+import Progress from "./Progress";
+import Laporan from "./Laporan";
+import Pengguna from "./Pengguna";
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginForm, setLoginForm] = useState({
+    username: "",
+    password: "",
+    role: "admin"
+  });
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("admin");
+  const [page, setPage] = useState("dashboard");
   const [jadwal, setJadwal] = useState([]);
   const [form, setForm] = useState({
     mahasiswa: "",
@@ -9,12 +27,65 @@ function App() {
     jam_selesai: ""
   });
 
-  // ambil data
+  const rolePages = {
+    mahasiswa: ["dashboard", "pengajuan", "dokumen", "progress", "jadwal"],
+    dosen: ["dashboard", "bimbingan", "dokumen", "progress", "jadwal"],
+    admin: ["dashboard", "pengguna", "pengajuan", "dokumen", "jadwal", "progress"],
+    kaprodi: ["dashboard", "laporan", "progress", "dokumen"]
+  };
+
   useEffect(() => {
+    if (!isLoggedIn) return;
+
     fetch("http://localhost:3000/jadwal")
       .then(res => res.json())
       .then(data => setJadwal(data));
-  }, []);
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!rolePages[userRole].includes(page)) {
+      setPage("dashboard");
+    }
+  }, [page, userRole]);
+
+  const handleLoginChange = (e) => {
+    setLoginForm({
+      ...loginForm,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+
+    if (!loginForm.username || !loginForm.password) {
+      alert("Isi username dan password terlebih dahulu.");
+      return;
+    }
+
+    setUserName(loginForm.username);
+    setUserRole(loginForm.role);
+    setIsLoggedIn(true);
+    setLoginForm({ username: "", password: "", role: "admin" });
+  };
+
+  const handleQuickLogin = (role) => {
+    setUserName(role);
+    setUserRole(role);
+    setLoginForm({ username: role, password: role, role });
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserName("");
+    setUserRole("admin");
+    setPage("dashboard");
+  };
+
+  const handleNavigate = (target) => {
+    setPage(target);
+  };
 
   // handle input
   const handleChange = (e) => {
@@ -73,90 +144,57 @@ function App() {
     });
   };
 
+  if (!isLoggedIn) {
+    return (
+      <Login
+        loginForm={loginForm}
+        onInputChange={handleLoginChange}
+        onLoginSubmit={handleLoginSubmit}
+        onQuickLogin={handleQuickLogin}
+      />
+    );
+  }
+
+  if (page === "pengajuan") {
+    return <Pengajuan role={userRole} username={userName} onBack={() => handleNavigate("dashboard")} />;
+  }
+
+  if (page === "bimbingan") {
+    return <Bimbingan role={userRole} username={userName} onBack={() => handleNavigate("dashboard")} />;
+  }
+
+  if (page === "jadwal") {
+    return <Jadwal role={userRole} username={userName} onBack={() => handleNavigate("dashboard")} jadwal={jadwal} />;
+  }
+
+  if (page === "dokumen") {
+    return <Dokumen role={userRole} username={userName} onBack={() => handleNavigate("dashboard")} />;
+  }
+
+  if (page === "progress") {
+    return <Progress role={userRole} username={userName} onBack={() => handleNavigate("dashboard")} />;
+  }
+
+  if (page === "laporan") {
+    return <Laporan role={userRole} username={userName} onBack={() => handleNavigate("dashboard")} />;
+  }
+
+  if (page === "pengguna") {
+    return <Pengguna role={userRole} username={userName} onBack={() => handleNavigate("dashboard")} />;
+  }
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Jadwal Sidang</h1>
-
-      <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
-        <input 
-          name="mahasiswa" 
-          placeholder="Nama Mahasiswa" 
-          value={form.mahasiswa}
-          onChange={handleChange}
-          required
-          style={{ marginRight: "10px", padding: "8px" }}
-        />
-        <input 
-          type="date" 
-          name="tanggal" 
-          value={form.tanggal}
-          onChange={handleChange}
-          required
-          style={{ marginRight: "10px", padding: "8px" }}
-        />
-        <input 
-          type="time" 
-          name="jam_mulai" 
-          value={form.jam_mulai}
-          onChange={handleChange}
-          required
-          style={{ marginRight: "10px", padding: "8px" }}
-        />
-        <input 
-          type="time" 
-          name="jam_selesai" 
-          value={form.jam_selesai}
-          onChange={handleChange}
-          required
-          style={{ marginRight: "10px", padding: "8px" }}
-        />
-        <button type="submit" style={{ padding: "8px 16px" }}>
-          Tambah
-        </button>
-      </form>
-
-      <hr />
-
-      <div>
-        {jadwal.length === 0 ? (
-          <p>Tidak ada jadwal</p>
-        ) : (
-          jadwal.map(j => (
-            <div 
-              key={j.id} 
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "10px",
-                border: "1px solid #ddd",
-                marginBottom: "5px",
-                borderRadius: "4px"
-              }}
-            >
-              <span>
-                <strong>{j.mahasiswa}</strong> | 
-                {j.tanggal} | 
-                {j.jam_mulai}-{j.jam_selesai}
-              </span>
-              <button
-                onClick={() => handleDelete(j.id)}
-                style={{
-                  backgroundColor: "#ff4444",
-                  color: "white",
-                  border: "none",
-                  padding: "5px 10px",
-                  borderRadius: "4px",
-                  cursor: "pointer"
-                }}
-              >
-                Hapus
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+    <Dashboard
+      username={userName}
+      role={userRole}
+      jadwal={jadwal}
+      form={form}
+      onFormChange={handleChange}
+      onFormSubmit={handleSubmit}
+      onDelete={handleDelete}
+      onLogout={handleLogout}
+      onNavigate={handleNavigate}
+    />
   );
 }
 
