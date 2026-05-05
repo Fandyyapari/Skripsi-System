@@ -1,194 +1,537 @@
 import { useEffect, useMemo, useState } from "react";
 
-const statusLabel = (status) => {
-  if (status === "selesai") return "Selesai";
-  if (status === "berjalan") return "Berjalan";
-  if (status === "awal") return "Awal";
-  if (status === "baru") return "Baru";
-  return "-";
-};
+function Progress({ role, onBack }) {
+  const API = "http://localhost:5000";
 
-const statusColor = (status) => {
-  if (status === "selesai") return "var(--success)";
-  if (status === "berjalan") return "var(--gold)";
-  if (status === "awal") return "var(--info)";
-  if (status === "baru") return "var(--danger)";
-  return "#64748b";
-};
-
-function Progress({ role, username, onBack }) {
-  const [mahasiswaData, setMahasiswaData] = useState([]);
-  const [toast, setToast] = useState("");
+  const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
 
-  useEffect(() => {
-    fetch("http://localhost:3000/progress")
-      .then((res) => res.json())
-      .then((data) => setMahasiswaData(Array.isArray(data) ? data : []))
-      .catch(() => setMahasiswaData([]));
-  }, []);
+  const [form, setForm] = useState({
+    judul: "",
+    dospem: "",
+    progress: 0,
+    status: "baru",
+    tanggal: ""
+  });
 
-  const avg = useMemo(() => {
-    if (!mahasiswaData.length) return 0;
-    return Math.round(mahasiswaData.reduce((sum, m) => sum + (m.progress || 0), 0) / mahasiswaData.length);
-  }, [mahasiswaData]);
+  const user = JSON.parse(localStorage.getItem("user"));
 
-  const filteredMahasiswa = useMemo(() => {
-    const lowerSearch = search.toLowerCase();
-    return mahasiswaData.filter((m) => {
-      const matchesSearch = (m.nama || "").toLowerCase().includes(lowerSearch) || (m.nim || "").includes(lowerSearch) || (m.judul || "").toLowerCase().includes(lowerSearch);
-      const matchesStatus = !filterStatus || m.status === filterStatus;
-      return matchesSearch && matchesStatus;
-    });
-  }, [search, filterStatus, mahasiswaData]);
+  // GET DATA
+  const getData = async () => {
+    try {
+      const res = await fetch(`${API}/progress`);
+      const result = await res.json();
 
-  const showToast = (message) => {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2400);
+      setData(result);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  const bucketCounts = useMemo(() => {
-    const total = mahasiswaData.length;
-    const buckets = [
-      { label: "Selesai (100%)", key: "selesai", color: "var(--success)" },
-      { label: "Berjalan (>50%)", key: "berjalan", color: "var(--gold)" },
-      { label: "Awal (<50%)", key: "awal", color: "var(--info)" },
-      { label: "Baru (<20%)", key: "baru", color: "var(--danger)" }
-    ];
-    return buckets.map((bucket) => {
-      const count = mahasiswaData.filter((m) => m.status === bucket.key).length;
-      return {
-        ...bucket,
-        count,
-        width: total ? Math.round((count / total) * 100) : 0
-      };
+  useEffect(() => {
+    getData();
+  }, []);
+
+  // FILTER
+  const filtered = useMemo(() => {
+    return data.filter((m) =>
+      m.judul?.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [data, search]);
+
+  // INPUT
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
     });
-  }, [mahasiswaData]);
+  };
+
+  // TAMBAH
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const res = await fetch(`${API}/progress`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          mahasiswa_id: user.id,
+          ...form
+        })
+      });
+
+      const result = await res.json();
+
+      alert(result.message);
+
+      setForm({
+        judul: "",
+        dospem: "",
+        progress: 0,
+        status: "baru",
+        tanggal: ""
+      });
+
+      getData();
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // DELETE
+  const handleDelete = async (id) => {
+    if (!window.confirm("Hapus progress?")) return;
+
+    await fetch(`${API}/progress/${id}`, {
+      method: "DELETE"
+    });
+
+    getData();
+  };
+
+  // VERIFIKASI
+  const handleVerifikasi = async (id, status) => {
+    const catatan = prompt("Masukkan catatan:");
+
+    try {
+      await fetch(
+        `${API}/progress/${id}/verifikasi`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            status_verifikasi: status,
+            catatan
+          })
+        }
+      );
+
+      getData();
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // HITUNG DASHBOARD
+  const totalProgress = data.length;
+
+  const rataProgress =
+    data.length > 0
+      ? Math.round(
+        data.reduce((a, b) => a + Number(b.progress), 0) /
+        data.length
+      )
+      : 0;
+
+  const selesai = data.filter((m) => m.status === "selesai").length;
+
+  const berjalan = data.filter((m) => m.status === "berjalan").length;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a1628", color: "#fff", padding: "24px", fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "28px" }}>
-          <div>
-            <p style={{ margin: 0, color: "rgba(255,255,255,0.7)", fontSize: "14px" }}>Progress — SKRIPSI UNESA</p>
-            <h1 style={{ margin: "10px 0 0", fontSize: "36px", lineHeight: 1.1 }}>Monitor <span style={{ color: "#f0a500" }}>Progress Skripsi</span></h1>
-            <p style={{ margin: "10px 0 0", color: "rgba(255,255,255,0.6)", maxWidth: "720px" }}>
-              Pantau persentase progress mahasiswa dan ekspor laporan perkembangan skripsi.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button onClick={onBack} style={{ padding: "12px 20px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.14)", background: "transparent", color: "#fff", cursor: "pointer" }}>
-              ← Kembali
-            </button>
-            <button onClick={() => showToast("📊 Laporan progress diekspor") } style={{ padding: "12px 20px", borderRadius: "12px", border: "none", background: "#f0a500", color: "#0a1628", cursor: "pointer" }}>
-              ⬇ Export Laporan
-            </button>
-          </div>
+    <div
+      style={{
+        padding: "24px",
+        background: "#0a1628",
+        minHeight: "100vh",
+        color: "#fff"
+      }}
+    >
+      {/* HEADER */}
+      <div style={header}>
+        <div>
+          <p style={subHeader}>Monitoring Skripsi</p>
+
+          <h1 style={{ marginTop: "10px" }}>
+            Progress Skripsi
+          </h1>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px", marginBottom: "24px" }}>
-          <div style={{ background: "#fff", borderRadius: "24px", padding: "24px", color: "#0f172a" }}>
-            <div style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px" }}>Distribusi Status</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {bucketCounts.map((bucket) => (
-                <div key={bucket.key}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "12px", fontWeight: 500 }}>{bucket.label}</span>
-                    <span style={{ fontSize: "12px", fontWeight: 700, color: bucket.color }}>{bucket.count} mhs</span>
-                  </div>
-                  <div style={{ background: "#e2e8f0", borderRadius: "999px", height: "10px", overflow: "hidden" }}>
-                    <div style={{ width: `${bucket.width}%`, background: bucket.color, height: "100%" }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ background: "#fff", borderRadius: "24px", padding: "24px", color: "#0f172a" }}>
-            <div style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px" }}>📈 Rata-rata Progress</div>
-            <div style={{ textAlign: "center", padding: "20px 0" }}>
-              <div style={{ fontFamily: "Syne, sans-serif", fontSize: "56px", fontWeight: 800, color: "#f59e0b", lineHeight: 1 }}>{avg}%</div>
-              <div style={{ fontSize: "13px", color: "#64748b", marginTop: "8px" }}>Rata-rata progress seluruh mahasiswa</div>
-            </div>
-            <div style={{ background: "#e2e8f0", borderRadius: "999px", height: "12px", overflow: "hidden" }}>
-              <div style={{ width: `${avg}%`, background: "#f59e0b", height: "100%" }} />
-            </div>
-          </div>
+        <button onClick={onBack} style={btnBack}>
+          ← Kembali
+        </button>
+      </div>
+
+      {/* CARD */}
+      <div style={cardGrid}>
+        <div style={cardDashboard}>
+          <p style={cardTitle}>📚 Total Progress</p>
+          <h2>{totalProgress}</h2>
         </div>
 
-        <div style={{ background: "#fff", borderRadius: "24px", padding: "24px", boxShadow: "0 24px 60px rgba(0,0,0,0.08)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Detail Progress Per Mahasiswa</div>
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", width: "100%", maxWidth: "520px" }}>
-              <input
-                placeholder="🔍 Cari mahasiswa atau judul..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ flex: 1, minWidth: "180px", padding: "12px 14px", borderRadius: "12px", border: "1px solid #e2e8f0", color: "#0f172a" }}
-              />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                style={{ minWidth: "160px", padding: "12px 14px", borderRadius: "12px", border: "1px solid #e2e8f0", color: "#0f172a" }}
-              >
-                <option value="">Semua Status</option>
-                <option value="selesai">Selesai</option>
-                <option value="berjalan">Berjalan</option>
-                <option value="awal">Awal</option>
-                <option value="baru">Baru</option>
-              </select>
-            </div>
-          </div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "860px" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: "#475569", fontSize: "12px", fontWeight: 700 }}>Mahasiswa</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: "#475569", fontSize: "12px", fontWeight: 700 }}>Judul</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: "#475569", fontSize: "12px", fontWeight: 700 }}>Pembimbing</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: "#475569", fontSize: "12px", fontWeight: 700 }}>Progress</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: "#475569", fontSize: "12px", fontWeight: 700 }}>Status</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", color: "#475569", fontSize: "12px", fontWeight: 700 }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMahasiswa.map((m) => (
-                  <tr key={m.nim} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                    <td style={{ padding: "16px", verticalAlign: "top" }}>
-                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{m.nama}</div>
-                      <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{m.nim}</div>
-                    </td>
-                    <td style={{ padding: "16px", verticalAlign: "top", fontSize: "12px", color: "#475569", maxWidth: "220px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.judul}</td>
-                    <td style={{ padding: "16px", verticalAlign: "top", fontSize: "12px", color: "#475569" }}>{m.dospem}</td>
-                    <td style={{ padding: "16px", verticalAlign: "top", minWidth: "180px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ flex: 1, background: "#e2e8f0", borderRadius: "999px", height: "10px", overflow: "hidden" }}>
-                          <div style={{ width: `${m.progress}%`, background: m.progress === 100 ? "var(--success)" : m.progress > 60 ? "var(--gold)" : "var(--info)", height: "100%" }} />
-                        </div>
-                        <span style={{ fontSize: "12px", fontWeight: 700, minWidth: "36px", color: "#0f172a" }}>{m.progress}%</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "16px", verticalAlign: "top" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "8px 12px", borderRadius: "999px", background: statusColor(m.status), color: "#0f172a", fontWeight: 700, fontSize: "12px" }}>{statusLabel(m.status)}</span>
-                    </td>
-                    <td style={{ padding: "16px", verticalAlign: "top" }}>
-                      <button onClick={() => showToast("👁 Membuka detail progress")} style={{ padding: "10px 14px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "transparent", color: "#0f172a", cursor: "pointer" }}>Detail</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div style={cardDashboard}>
+          <p style={cardTitle}>📈 Rata-rata</p>
+          <h2>{rataProgress}%</h2>
+        </div>
+
+        <div style={cardDashboard}>
+          <p style={cardTitle}>🚀 Berjalan</p>
+          <h2>{berjalan}</h2>
+        </div>
+
+        <div style={cardDashboard}>
+          <p style={cardTitle}>✅ Selesai</p>
+          <h2>{selesai}</h2>
         </div>
       </div>
 
-      {toast && (
-        <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "rgba(15,23,42,0.92)", color: "#fff", padding: "16px 20px", borderRadius: "18px", boxShadow: "0 24px 60px rgba(0,0,0,0.2)", zIndex: 20 }}>
-          {toast}
+      {/* FORM */}
+      {role === "mahasiswa" && (
+        <div style={formBox}>
+          <h3 style={{ color: "#000" }}>
+            Tambah Progress
+          </h3>
+
+          <form onSubmit={handleSubmit} style={formStyle}>
+
+            <input
+              type="text"
+              name="judul"
+              placeholder="Judul Skripsi"
+              value={form.judul}
+              onChange={handleChange}
+              style={input}
+              required
+            />
+
+            <input
+              type="text"
+              name="dospem"
+              placeholder="Dosen Pembimbing"
+              value={form.dospem}
+              onChange={handleChange}
+              style={input}
+              required
+            />
+
+            <input
+              type="number"
+              name="progress"
+              placeholder="Progress %"
+              value={form.progress}
+              onChange={handleChange}
+              style={input}
+              required
+            />
+
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              style={input}
+            >
+              <option value="baru">Baru</option>
+              <option value="awal">Awal</option>
+              <option value="berjalan">Berjalan</option>
+              <option value="selesai">Selesai</option>
+            </select>
+
+            <input
+              type="date"
+              name="tanggal"
+              value={form.tanggal}
+              onChange={handleChange}
+              style={input}
+              required
+            />
+
+            <button type="submit" style={btnSave}>
+              Tambah Progress
+            </button>
+
+          </form>
         </div>
+      )}
+
+      {/* SEARCH */}
+      <input
+        type="text"
+        placeholder="🔍 Cari judul skripsi..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          ...input,
+          marginTop: "24px",
+          marginBottom: "24px",
+          width: "100%"
+        }}
+      />
+
+      {/* LIST */}
+      {filtered.length === 0 ? (
+        <div style={emptyBox}>
+          Belum ada data progress 📭
+        </div>
+      ) : (
+        filtered.map((m) => (
+          <div key={m.id} style={card}>
+
+            <div style={topCard}>
+              <div>
+                <h3 style={{ margin: 0 }}>
+                  {m.judul}
+                </h3>
+
+                <p style={textMuted}>
+                  👨‍🏫 {m.dospem}
+                </p>
+              </div>
+
+              <span
+                style={{
+                  ...badge,
+                  background:
+                    m.status === "selesai"
+                      ? "#22c55e"
+                      : m.status === "berjalan"
+                        ? "#f59e0b"
+                        : m.status === "awal"
+                          ? "#3b82f6"
+                          : "#64748b"
+                }}
+              >
+                {m.status}
+              </span>
+            </div>
+
+            <p style={{ marginTop: "14px" }}>
+              📅 {m.tanggal}
+            </p>
+
+            {/* VERIFIKASI */}
+            <p>
+              <b>Status Verifikasi:</b>{" "}
+              {m.status_verifikasi || "pending"}
+            </p>
+
+            {m.catatan && (
+              <p>
+                <b>Catatan:</b> {m.catatan}
+              </p>
+            )}
+
+            {/* BAR */}
+            <div style={progressBg}>
+              <div
+                style={{
+                  ...progressFill,
+                  width: `${m.progress}%`
+                }}
+              />
+            </div>
+
+            <div style={progressInfo}>
+              <span>{m.progress}% selesai</span>
+            </div>
+
+            {/* DOSEN / ADMIN */}
+            {role !== "mahasiswa" && (
+              <div style={{ marginTop: "16px" }}>
+                <button
+                  onClick={() =>
+                    handleVerifikasi(
+                      m.id,
+                      "disetujui"
+                    )
+                  }
+                  style={btnAcc}
+                >
+                  ACC
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleVerifikasi(
+                      m.id,
+                      "revisi"
+                    )
+                  }
+                  style={btnRevisi}
+                >
+                  Revisi
+                </button>
+              </div>
+            )}
+
+            {/* DELETE */}
+            {role === "admin" && (
+              <div style={{ marginTop: "16px" }}>
+                <button
+                  onClick={() => handleDelete(m.id)}
+                  style={btnDelete}
+                >
+                  Hapus
+                </button>
+              </div>
+            )}
+
+          </div>
+        ))
       )}
     </div>
   );
 }
+
+/* STYLE */
+
+const header = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "28px",
+  flexWrap: "wrap",
+  gap: "12px"
+};
+
+const subHeader = {
+  margin: 0,
+  color: "rgba(255,255,255,0.6)"
+};
+
+const cardGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+  gap: "16px",
+  marginBottom: "28px"
+};
+
+const cardDashboard = {
+  background: "#fff",
+  color: "#0f172a",
+  borderRadius: "20px",
+  padding: "24px"
+};
+
+const cardTitle = {
+  margin: 0,
+  color: "#64748b"
+};
+
+const formBox = {
+  background: "#fff",
+  padding: "24px",
+  borderRadius: "20px"
+};
+
+const formStyle = {
+  display: "grid",
+  gap: "14px",
+  marginTop: "16px"
+};
+
+const input = {
+  padding: "14px",
+  borderRadius: "12px",
+  border: "1px solid #cbd5e1"
+};
+
+const btnSave = {
+  padding: "14px",
+  border: "none",
+  borderRadius: "12px",
+  background: "#0f172a",
+  color: "#fff",
+  cursor: "pointer"
+};
+
+const btnBack = {
+  padding: "12px 18px",
+  border: "none",
+  borderRadius: "12px",
+  background: "#f0a500",
+  color: "#000",
+  cursor: "pointer",
+  fontWeight: "bold"
+};
+
+const card = {
+  background: "#fff",
+  color: "#000",
+  padding: "20px",
+  borderRadius: "20px",
+  marginBottom: "16px"
+};
+
+const topCard = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "12px",
+  flexWrap: "wrap"
+};
+
+const textMuted = {
+  color: "#64748b",
+  marginTop: "6px"
+};
+
+const progressBg = {
+  width: "100%",
+  height: "12px",
+  background: "#e2e8f0",
+  borderRadius: "999px",
+  overflow: "hidden",
+  marginTop: "14px"
+};
+
+const progressFill = {
+  height: "100%",
+  background: "#22c55e"
+};
+
+const progressInfo = {
+  marginTop: "10px",
+  fontWeight: "bold"
+};
+
+const badge = {
+  padding: "6px 12px",
+  borderRadius: "999px",
+  color: "#fff",
+  fontSize: "12px",
+  textTransform: "capitalize"
+};
+
+const btnDelete = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "10px",
+  background: "#ef4444",
+  color: "#fff",
+  cursor: "pointer"
+};
+
+const btnAcc = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "10px",
+  background: "#22c55e",
+  color: "#fff",
+  cursor: "pointer",
+  marginRight: "10px"
+};
+
+const btnRevisi = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "10px",
+  background: "#f59e0b",
+  color: "#fff",
+  cursor: "pointer"
+};
+
+const emptyBox = {
+  background: "#fff",
+  color: "#000",
+  padding: "30px",
+  borderRadius: "20px",
+  textAlign: "center"
+};
 
 export default Progress;

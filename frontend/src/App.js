@@ -8,6 +8,7 @@ import Dokumen from "./Dokumen";
 import Progress from "./Progress";
 import Laporan from "./Laporan";
 import Pengguna from "./Pengguna";
+import Sidang from "./Sidang";
 
 function App() {
   const API = "http://localhost:5000";
@@ -32,7 +33,10 @@ function App() {
     tanggal: "",
     jam_mulai: "",
     jam_selesai: ""
+
   });
+
+
 
   // =========================
   // AUTO LOGIN
@@ -112,10 +116,10 @@ function App() {
       setUserRole(data.user.role);
       setIsLoggedIn(true);
 
-      if (data.user.role === "admin") setPage("pengguna");
-      else if (data.user.role === "dosen") setPage("bimbingan");
-      else if (data.user.role === "mahasiswa") setPage("pengajuan");
-      else if (data.user.role === "kaprodi") setPage("laporan");
+      if (data.user.role === "admin") setPage("dashboard");
+      else if (data.user.role === "dosen") setPage("dashboard");
+      else if (data.user.role === "mahasiswa") setPage("dashboard");
+      else if (data.user.role === "kaprodi") setPage("dashboard");
 
     } catch (err) {
       alert("Server error");
@@ -273,14 +277,15 @@ function App() {
       />
     );
 
-  if (page === "dokumen")
+  if (page === "dokumen") {
     return (
       <Dokumen
         role={userRole}
         username={userName}
-        onBack={() => handleNavigate("dashboard")}
+        onBack={() => setPage("dashboard")}
       />
     );
+  }
 
   if (page === "progress")
     return (
@@ -303,6 +308,15 @@ function App() {
   if (page === "pengguna")
     return (
       <Pengguna
+        role={userRole}
+        username={userName}
+        onBack={() => handleNavigate("dashboard")}
+      />
+    );
+
+  if (page === "sidang")
+    return (
+      <Sidang
         role={userRole}
         username={userName}
         onBack={() => handleNavigate("dashboard")}

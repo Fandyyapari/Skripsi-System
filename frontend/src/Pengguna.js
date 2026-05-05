@@ -7,6 +7,7 @@ function Pengguna({ onBack }) {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   const [form, setForm] = useState({
     nama: "",
@@ -17,9 +18,9 @@ function Pengguna({ onBack }) {
     identitas: ""
   });
 
-  // =========================
+  // ======================
   // GET USERS
-  // =========================
+  // ======================
   const getUsers = async () => {
     try {
       const res = await fetch(`${API}/auth/users`);
@@ -34,31 +35,32 @@ function Pengguna({ onBack }) {
     getUsers();
   }, []);
 
-  // =========================
+  // ======================
   // SEARCH
-  // =========================
+  // ======================
   const filteredUsers = useMemo(() => {
     const q = search.toLowerCase();
 
     return users.filter((user) =>
       (user.nama || "").toLowerCase().includes(q) ||
       (user.username || "").toLowerCase().includes(q) ||
+      (user.email || "").toLowerCase().includes(q) ||
       (user.role || "").toLowerCase().includes(q) ||
       (user.identitas || "").toLowerCase().includes(q)
     );
   }, [users, search]);
 
-  // =========================
+  // ======================
   // TOAST
-  // =========================
-  const showToast = (message) => {
-    setToast(message);
-    setTimeout(() => setToast(""), 2400);
+  // ======================
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2500);
   };
 
-  // =========================
-  // INPUT
-  // =========================
+  // ======================
+  // HANDLE INPUT
+  // ======================
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -66,28 +68,86 @@ function Pengguna({ onBack }) {
     });
   };
 
-  // =========================
-  // TAMBAH USER
-  // =========================
+  // ======================
+  // EDIT USER
+  // ======================
+  const handleEdit = (user) => {
+    setForm({
+      nama: user.nama,
+      username: user.username,
+      email: user.email,
+      password: "",
+      role: user.role,
+      identitas: user.identitas
+    });
+
+    setEditId(user.id);
+    setShowModal(true);
+  };
+
+  // ======================
+  // DELETE USER
+  // ======================
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm("Yakin hapus user ini?");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`${API}/auth/users/${id}`, {
+        method: "DELETE"
+      });
+
+      const data = await res.json();
+
+      showToast(data.message);
+      getUsers();
+    } catch (error) {
+      showToast("Gagal hapus user");
+    }
+  };
+
+  // ======================
+  // SUBMIT ADD / EDIT
+  // ======================
   const handleSubmit = async () => {
     if (
       !form.nama ||
       !form.username ||
       !form.email ||
-      !form.password ||
+      !form.role ||
       !form.identitas
     ) {
       showToast("Lengkapi semua data");
       return;
     }
 
+    if (!editId && !form.password) {
+      showToast("Password wajib diisi");
+      return;
+    }
+
     try {
-      const res = await fetch(`${API}/auth/register`, {
-        method: "POST",
+      const url = editId
+        ? `${API}/auth/users/${editId}`
+        : `${API}/auth/register`;
+
+      const method = editId ? "PUT" : "POST";
+
+      const body = editId
+        ? {
+            nama: form.nama,
+            email: form.email,
+            role: form.role,
+            identitas: form.identitas
+          }
+        : form;
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(body)
       });
 
       const data = await res.json();
@@ -104,11 +164,12 @@ function Pengguna({ onBack }) {
           identitas: ""
         });
 
+        setEditId(null);
         setShowModal(false);
         getUsers();
       }
     } catch (error) {
-      showToast("Gagal tambah user");
+      showToast("Gagal simpan data");
     }
   };
 
@@ -145,26 +206,29 @@ function Pengguna({ onBack }) {
               Pengguna — SKRIPSI UNESA
             </p>
 
-            <h1
-              style={{
-                margin: "10px 0 0",
-                fontSize: "36px"
-              }}
-            >
+            <h1 style={{ margin: "10px 0 0", fontSize: "36px" }}>
               Kelola <span style={{ color: "#f0a500" }}>Pengguna</span>
             </h1>
           </div>
 
           <div style={{ display: "flex", gap: "10px" }}>
-            <button
-              onClick={onBack}
-              style={btnOutline}
-            >
+            <button onClick={onBack} style={btnOutline}>
               ← Kembali
             </button>
 
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                setEditId(null);
+                setForm({
+                  nama: "",
+                  username: "",
+                  email: "",
+                  password: "",
+                  role: "mahasiswa",
+                  identitas: ""
+                });
+                setShowModal(true);
+              }}
               style={btnGold}
             >
               ＋ Tambah Pengguna
@@ -186,12 +250,7 @@ function Pengguna({ onBack }) {
             placeholder="🔍 Cari pengguna..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "14px",
-              borderRadius: "12px",
-              border: "1px solid #ddd"
-            }}
+            style={input}
           />
         </div>
 
@@ -210,13 +269,14 @@ function Pengguna({ onBack }) {
                 <th style={th}>Email</th>
                 <th style={th}>Role</th>
                 <th style={th}>ID</th>
+                <th style={th}>Aksi</th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredUsers.map((user, index) => (
+              {filteredUsers.map((user) => (
                 <tr
-                  key={index}
+                  key={user.id}
                   style={{
                     borderBottom: "1px solid rgba(255,255,255,0.08)"
                   }}
@@ -226,6 +286,24 @@ function Pengguna({ onBack }) {
                   <td style={td}>{user.email}</td>
                   <td style={td}>{user.role}</td>
                   <td style={td}>{user.identitas}</td>
+
+                  <td style={td}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        onClick={() => handleEdit(user)}
+                        style={btnGoldSmall}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        style={btnRed}
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -272,7 +350,7 @@ function Pengguna({ onBack }) {
               padding: "28px"
             }}
           >
-            <h2>Tambah Pengguna</h2>
+            <h2>{editId ? "Edit Pengguna" : "Tambah Pengguna"}</h2>
 
             <div style={{ display: "grid", gap: "14px" }}>
               <input
@@ -289,6 +367,7 @@ function Pengguna({ onBack }) {
                 onChange={handleChange}
                 placeholder="Username"
                 style={input}
+                disabled={editId}
               />
 
               <input
@@ -299,14 +378,16 @@ function Pengguna({ onBack }) {
                 style={input}
               />
 
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                placeholder="Password"
-                style={input}
-              />
+              {!editId && (
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  style={input}
+                />
+              )}
 
               <select
                 name="role"
@@ -338,17 +419,17 @@ function Pengguna({ onBack }) {
               }}
             >
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setEditId(null);
+                }}
                 style={btnOutlineDark}
               >
                 Batal
               </button>
 
-              <button
-                onClick={handleSubmit}
-                style={btnDark}
-              >
-                Simpan
+              <button onClick={handleSubmit} style={btnDark}>
+                {editId ? "Update" : "Simpan"}
               </button>
             </div>
           </div>
@@ -382,6 +463,24 @@ const btnGold = {
   border: "none",
   background: "#f0a500",
   color: "#000",
+  cursor: "pointer"
+};
+
+const btnGoldSmall = {
+  padding: "8px 12px",
+  borderRadius: "10px",
+  border: "none",
+  background: "#f0a500",
+  color: "#000",
+  cursor: "pointer"
+};
+
+const btnRed = {
+  padding: "8px 12px",
+  borderRadius: "10px",
+  border: "none",
+  background: "#ef4444",
+  color: "#fff",
   cursor: "pointer"
 };
 

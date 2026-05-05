@@ -1,5 +1,5 @@
 import db from "../db.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 // LOGIN
@@ -89,6 +89,41 @@ export const getUsers = (req, res) => {
         });
 
       res.json(rows);
+    }
+  );
+};
+
+// UPDATE USER
+export const updateUser = (req, res) => {
+  const { id } = req.params;
+  const { nama, email, role, identitas } = req.body;
+
+  db.query(
+    `UPDATE users 
+     SET nama=?, email=?, role=?, identitas=? 
+     WHERE id=?`,
+    [nama, email, role, identitas, id],
+    (err) => {
+      if (err)
+        return res.status(500).json({ message: err.message });
+
+      res.json({ message: "User berhasil diupdate" });
+    }
+  );
+};
+
+// DELETE USER
+export const deleteUser = (req, res) => {
+  const { id } = req.params;
+
+  db.query(
+    "DELETE FROM users WHERE id=?",
+    [id],
+    (err) => {
+      if (err)
+        return res.status(500).json({ message: err.message });
+
+      res.json({ message: "User berhasil dihapus" });
     }
   );
 };

@@ -1,4 +1,16 @@
-function Dashboard({ username, role, jadwal, form, onFormChange, onFormSubmit, onDelete, onLogout, onNavigate }) {
+import { useEffect, useState } from "react";
+
+function Dashboard({
+  username,
+  role,
+  jadwal,
+  form,
+  onFormChange,
+  onFormSubmit,
+  onDelete,
+  onLogout,
+  onNavigate
+}) {
   const roleLabel = {
     mahasiswa: "Mahasiswa",
     dosen: "Dosen Pembimbing",
@@ -6,123 +18,435 @@ function Dashboard({ username, role, jadwal, form, onFormChange, onFormSubmit, o
     kaprodi: "Kepala Program Studi"
   };
 
+  // ================= MENU ROLE =================
+
+  const menuRole = {
+    mahasiswa: [
+      "pengajuan",
+      "bimbingan",
+      "progress",
+      "jadwal",
+      "dokumen",
+      "sidang"
+    ],
+
+    dosen: [
+      "bimbingan",
+      "progress",
+      "jadwal",
+      "dokumen",
+      "sidang"
+    ],
+
+    admin: [
+      "pengguna",
+      "pengajuan",
+      "progress",
+      "dokumen",
+      "jadwal",
+      "sidang",
+      "laporan"
+    ],
+
+    kaprodi: [
+      "progress",
+      "dokumen",
+      "laporan",
+      "sidang"
+    ]
+  };
+
+  const menuIcon = {
+    pengguna: "👤",
+    pengajuan: "📄",
+    bimbingan: "💬",
+    progress: "📈",
+    jadwal: "📅",
+    dokumen: "📁",
+    sidang: "🎓",
+    laporan: "📊"
+  };
+
+  const menus = menuRole[role] || [];
+
+  // ================= DASHBOARD DATA =================
+
+  const [dashboardData, setDashboardData] = useState({});
+
+  useEffect(() => {
+    fetch("http://localhost:5000/admin/dashboard")
+      .then((res) => res.json())
+      .then((data) => setDashboardData(data))
+      .catch(() => setDashboardData({}));
+  }, []);
+
   return (
-    <div style={{ minHeight: "100vh", background: "#eef2ff", padding: "24px" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#0a1628",
+        padding: "24px",
+        fontFamily: "'DM Sans', sans-serif",
+        color: "#fff"
+      }}
+    >
+      <div style={{ maxWidth: "1250px", margin: "0 auto" }}>
+
+        {/* ================= HEADER ================= */}
+
+        <div style={header}>
           <div>
-            <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>Dashboard Skripsi UNESA</p>
-            <h1 style={{ margin: "8px 0", fontSize: "32px", color: "#0f172a" }}>
-              Halo, {username || roleLabel[role]} 👋
+            <p style={subHeader}>
+              Dashboard Sistem Skripsi UNESA
+            </p>
+
+            <h1 style={{ margin: "10px 0 0", fontSize: "34px" }}>
+              Halo,{" "}
+              <span style={{ color: "#f0a500" }}>
+                {username || roleLabel[role]}
+              </span>
             </h1>
-            <p style={{ margin: 0, color: "#475569", maxWidth: "640px" }}>
-              Anda masuk sebagai <strong>{roleLabel[role]}</strong>. Kelola jadwal sidang dan pantau ringkasan aktivitas di sini.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            {(
-              role === "mahasiswa" ? ["pengajuan", "dokumen", "progress", "jadwal"] :
-              role === "dosen" ? ["bimbingan", "dokumen", "progress", "jadwal"] :
-              role === "admin" ? ["pengguna", "pengajuan", "dokumen", "jadwal", "progress"] :
-              role === "kaprodi" ? ["laporan", "progress", "dokumen"] :
-              ["dokumen", "progress"]
-            ).map((target) => (
-              <button
-                key={target}
-                onClick={() => onNavigate(target)}
-                style={{ padding: "12px 20px", borderRadius: "10px", border: "1px solid rgba(15,23,42,0.16)", background: "transparent", color: "#0f172a", cursor: "pointer" }}
-              >
-                {target.charAt(0).toUpperCase() + target.slice(1)}
-              </button>
-            ))}
-            <button
-              onClick={onLogout}
-              style={{ padding: "12px 20px", background: "#0f172a", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer" }}
-            >
-              Logout
-            </button>
-          </div>
-        </header>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginTop: "32px" }}>
-          <div style={{ background: "#fff", borderRadius: "20px", padding: "24px", boxShadow: "0 10px 30px rgba(15,23,42,0.08)" }}>
-            <p style={{ margin: 0, color: "#64748b", fontSize: "13px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-              Total Jadwal
+            <p style={subHeader}>
+              Anda login sebagai {roleLabel[role]}
             </p>
-            <h2 style={{ margin: "12px 0 0", color: "#0f172a", fontSize: "36px" }}>{jadwal.length}</h2>
           </div>
 
-          <div style={{ background: "#fff", borderRadius: "20px", padding: "24px", boxShadow: "0 10px 30px rgba(15,23,42,0.08)" }}>
-            <p style={{ margin: 0, color: "#64748b", fontSize: "13px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-              Status Login
-            </p>
-            <h2 style={{ margin: "12px 0 0", color: "#0f172a", fontSize: "26px" }}>{roleLabel[role]}</h2>
-          </div>
-
-          <div style={{ background: "#fff", borderRadius: "20px", padding: "24px", boxShadow: "0 10px 30px rgba(15,23,42,0.08)" }}>
-            <p style={{ margin: 0, color: "#64748b", fontSize: "13px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-              Pengguna Aktif
-            </p>
-            <h2 style={{ margin: "12px 0 0", color: "#0f172a", fontSize: "26px" }}>{username || roleLabel[role]}</h2>
-          </div>
+          <button onClick={onLogout} style={btnLogout}>
+            Logout
+          </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px", marginTop: "32px" }}>
-          <section style={{ background: "#fff", borderRadius: "24px", padding: "24px", boxShadow: "0 10px 30px rgba(15,23,42,0.08)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div>
-                <h3 style={{ margin: 0, color: "#0f172a" }}>Jadwal Terbaru</h3>
-                <p style={{ margin: "8px 0 0", color: "#64748b" }}>Lihat jadwal sidang yang sudah terdaftar.</p>
+        {/* ================= MENU ================= */}
+
+        <div style={menuGrid}>
+          {menus.map((item) => (
+            <button
+              key={item}
+              onClick={() => onNavigate(item)}
+              style={menuBtn}
+            >
+              <div style={{ fontSize: "28px" }}>
+                {menuIcon[item]}
+              </div>
+
+              <div style={{ marginTop: "10px" }}>
+                {item}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* ================= DASHBOARD CARD ================= */}
+
+        <div style={cardGrid}>
+
+          <Card
+            title="📅 Total Jadwal"
+            value={dashboardData.totalJadwal || 0}
+          />
+
+          <Card
+            title="📈 Total Progress"
+            value={dashboardData.totalProgress || 0}
+          />
+
+          <Card
+            title="🎓 Total Sidang"
+            value={dashboardData.totalSidang || 0}
+          />
+
+          <Card
+            title="📊 Rata-rata Progress"
+            value={`${Math.round(dashboardData.avgProgress || 0)}%`}
+          />
+
+        </div>
+
+        {/* ================= STATUS PROGRESS ================= */}
+
+        {role === "admin" && (
+          <div style={cardGrid}>
+            <Card title="🆕 Baru" value={dashboardData.baru || 0} />
+
+            <Card title="📘 Awal" value={dashboardData.awal || 0} />
+
+            <Card title="🚀 Berjalan" value={dashboardData.berjalan || 0} />
+
+            <Card title="✅ Selesai" value={dashboardData.selesai || 0} />
+          </div>
+        )}
+
+        {/* ================= ADMIN ONLY ================= */}
+
+        {role === "admin" && (
+          <>
+            <div style={grid2}>
+
+              {/* JADWAL TERBARU */}
+
+              <div style={box}>
+                <h3 style={judul}>
+                  📅 Jadwal Terbaru
+                </h3>
+
+                {jadwal.length === 0 ? (
+                  <p style={sub}>
+                    Belum ada jadwal.
+                  </p>
+                ) : (
+                  jadwal.slice(0, 5).map((item) => (
+                    <div key={item.id} style={itemBox}>
+
+                      <b>{item.mahasiswa}</b>
+
+                      <p style={textMuted}>
+                        {item.tanggal} | {item.jam_mulai} - {item.jam_selesai}
+                      </p>
+
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* FORM TAMBAH JADWAL */}
+
+              <div style={box}>
+                <h3 style={judul}>
+                  ➕ Tambah Jadwal
+                </h3>
+
+                <form onSubmit={onFormSubmit} style={formStyle}>
+
+                  <input
+                    name="mahasiswa"
+                    value={form.mahasiswa}
+                    onChange={onFormChange}
+                    placeholder="Nama Mahasiswa"
+                    style={input}
+                    required
+                  />
+
+                  <input
+                    type="date"
+                    name="tanggal"
+                    value={form.tanggal}
+                    onChange={onFormChange}
+                    style={input}
+                    required
+                  />
+
+                  <input
+                    type="time"
+                    name="jam_mulai"
+                    value={form.jam_mulai}
+                    onChange={onFormChange}
+                    style={input}
+                    required
+                  />
+
+                  <input
+                    type="time"
+                    name="jam_selesai"
+                    value={form.jam_selesai}
+                    onChange={onFormChange}
+                    style={input}
+                    required
+                  />
+
+                  <button type="submit" style={btnDark}>
+                    Simpan Jadwal
+                  </button>
+
+                </form>
               </div>
             </div>
 
-            {jadwal.length === 0 ? (
-              <p style={{ color: "#64748b" }}>Belum ada jadwal.</p>
-            ) : (
-              <div style={{ display: "grid", gap: "12px" }}>
-                {jadwal.slice(0, 5).map((item) => (
-                  <div key={item.id} style={{ border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px" }}>
-                    <p style={{ margin: "0 0 6px", fontWeight: 700, color: "#0f172a" }}>{item.mahasiswa}</p>
-                    <p style={{ margin: 0, color: "#475569" }}>{item.tanggal} • {item.jam_mulai} - {item.jam_selesai}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+            {/* ================= SEMUA JADWAL ================= */}
 
-          <aside style={{ background: "#fff", borderRadius: "24px", padding: "24px", boxShadow: "0 10px 30px rgba(15,23,42,0.08)" }}>
-            <h3 style={{ marginTop: 0, color: "#0f172a" }}>Tambah Jadwal</h3>
-            <form onSubmit={onFormSubmit} style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
-              <input name="mahasiswa" placeholder="Nama Mahasiswa" value={form.mahasiswa} onChange={onFormChange} required style={{ padding: "14px", borderRadius: "14px", border: "1px solid #cbd5e1", outline: "none" }} />
-              <input type="date" name="tanggal" value={form.tanggal} onChange={onFormChange} required style={{ padding: "14px", borderRadius: "14px", border: "1px solid #cbd5e1", outline: "none" }} />
-              <input type="time" name="jam_mulai" value={form.jam_mulai} onChange={onFormChange} required style={{ padding: "14px", borderRadius: "14px", border: "1px solid #cbd5e1", outline: "none" }} />
-              <input type="time" name="jam_selesai" value={form.jam_selesai} onChange={onFormChange} required style={{ padding: "14px", borderRadius: "14px", border: "1px solid #cbd5e1", outline: "none" }} />
-              <button type="submit" style={{ padding: "14px", borderRadius: "14px", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer" }}>Simpan Jadwal</button>
-            </form>
-          </aside>
-        </div>
+            <div style={box}>
+              <h3 style={judul}>
+                📋 Semua Jadwal
+              </h3>
 
-        <section style={{ marginTop: "32px", background: "#fff", borderRadius: "24px", padding: "24px", boxShadow: "0 10px 30px rgba(15,23,42,0.08)" }}>
-          <h3 style={{ marginTop: 0, color: "#0f172a" }}>Semua Jadwal</h3>
-          <div style={{ marginTop: "16px", display: "grid", gap: "12px" }}>
-            {jadwal.length === 0 ? (
-              <p style={{ color: "#64748b" }}>Tidak ada jadwal saat ini.</p>
-            ) : (
-              jadwal.map((item) => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", border: "1px solid #e2e8f0", borderRadius: "16px" }}>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700, color: "#0f172a" }}>{item.mahasiswa}</p>
-                    <p style={{ margin: "4px 0 0", color: "#475569" }}>{item.tanggal} • {item.jam_mulai} - {item.jam_selesai}</p>
+              {jadwal.length === 0 ? (
+                <p style={sub}>
+                  Tidak ada data.
+                </p>
+              ) : (
+                jadwal.map((item) => (
+                  <div key={item.id} style={itemRow}>
+
+                    <div>
+                      <b>{item.mahasiswa}</b>
+
+                      <p style={textMuted}>
+                        {item.tanggal} | {item.jam_mulai} - {item.jam_selesai}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => onDelete(item.id)}
+                      style={btnDelete}
+                    >
+                      Hapus
+                    </button>
+
                   </div>
-                  <button onClick={() => onDelete(item.id)} style={{ padding: "10px 16px", border: "none", borderRadius: "12px", background: "#ef4444", color: "#fff", cursor: "pointer" }}>Hapus</button>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
+
+function Card({ title, value }) {
+  return (
+    <div style={card}>
+      <p style={{ margin: 0, color: "#64748b" }}>
+        {title}
+      </p>
+
+      <h2 style={{ margin: "12px 0 0", fontSize: "32px" }}>
+        {value}
+      </h2>
+    </div>
+  );
+}
+
+/* ================= STYLE ================= */
+
+const header = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  flexWrap: "wrap",
+  marginBottom: "28px"
+};
+
+const subHeader = {
+  margin: 0,
+  color: "rgba(255,255,255,0.6)",
+  fontSize: "14px"
+};
+
+const btnLogout = {
+  padding: "12px 18px",
+  borderRadius: "12px",
+  border: "none",
+  background: "#ef4444",
+  color: "#fff",
+  cursor: "pointer"
+};
+
+const menuGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+  gap: "14px",
+  marginBottom: "28px"
+};
+
+const menuBtn = {
+  padding: "22px",
+  borderRadius: "20px",
+  border: "none",
+  background: "#f0a500",
+  color: "#000",
+  fontWeight: "700",
+  cursor: "pointer",
+  textTransform: "capitalize",
+  fontSize: "16px"
+};
+
+const cardGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+  gap: "16px",
+  marginBottom: "28px"
+};
+
+const card = {
+  background: "#fff",
+  color: "#0f172a",
+  borderRadius: "22px",
+  padding: "24px"
+};
+
+const grid2 = {
+  display: "grid",
+  gridTemplateColumns: "2fr 1fr",
+  gap: "24px",
+  marginBottom: "28px"
+};
+
+const box = {
+  background: "#fff",
+  color: "#0f172a",
+  borderRadius: "24px",
+  padding: "24px"
+};
+
+const judul = {
+  marginTop: 0
+};
+
+const sub = {
+  color: "#64748b"
+};
+
+const textMuted = {
+  margin: "6px 0 0",
+  color: "#64748b"
+};
+
+const itemBox = {
+  border: "1px solid #e2e8f0",
+  borderRadius: "14px",
+  padding: "14px",
+  marginBottom: "12px"
+};
+
+const itemRow = {
+  border: "1px solid #e2e8f0",
+  borderRadius: "14px",
+  padding: "14px",
+  marginBottom: "12px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center"
+};
+
+const input = {
+  padding: "14px",
+  borderRadius: "12px",
+  border: "1px solid #cbd5e1"
+};
+
+const formStyle = {
+  display: "grid",
+  gap: "14px",
+  marginTop: "16px"
+};
+
+const btnDark = {
+  padding: "14px",
+  borderRadius: "12px",
+  border: "none",
+  background: "#0f172a",
+  color: "#fff",
+  cursor: "pointer"
+};
+
+const btnDelete = {
+  padding: "10px 14px",
+  border: "none",
+  borderRadius: "12px",
+  background: "#ef4444",
+  color: "#fff",
+  cursor: "pointer"
+};
 
 export default Dashboard;
