@@ -3,6 +3,7 @@ export const createBimbingan = (data) => {
     return new Promise((resolve, reject) => {
         const {
             mahasiswa_id,
+            pengajuan_id,
             mahasiswa,
             dosen,
             topik,
@@ -13,10 +14,11 @@ export const createBimbingan = (data) => {
 
         db.query(
             `INSERT INTO bimbingan
-            (mahasiswa_id, mahasiswa, dosen, topik, catatan, tanggal, status)
-            VALUES (?,?,?,?,?,?,?)`,
+            (mahasiswa_id, pengajuan_id, mahasiswa, dosen, topik, catatan, tanggal, status)
+            VALUES (?,?,?,?,?,?,?,?)`,
             [
                 mahasiswa_id,
+                pengajuan_id,
                 mahasiswa,
                 dosen,
                 topik,

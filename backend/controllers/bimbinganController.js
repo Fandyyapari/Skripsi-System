@@ -1,4 +1,5 @@
 import db from "../db.js";
+
 import {
     createBimbingan,
     getAllBimbingan,
@@ -6,41 +7,48 @@ import {
     deleteBimbingan
 } from "../models/bimbinganModel.js";
 
-// ✅ TAMBAH Bimbingan (SUDAH NYAMBUNG KE PEMBIMBING)
+// ================= TAMBAH =================
 export const addBimbingan = async (req, res) => {
     try {
+
         const {
             mahasiswa_id,
+            pengajuan_id,
             mahasiswa,
             topik,
             catatan,
-            tanggal,
-            pengajuan_id
+            tanggal
         } = req.body;
 
-        if (!mahasiswa_id || !topik || !tanggal || !pengajuan_id) {
+        if (!pengajuan_id) {
             return res.status(400).json({
-                message: "Data tidak lengkap"
+                message: "Pengajuan tidak ditemukan"
             });
         }
 
-        // 🔥 ambil pembimbing dari tabel pembimbing
         db.query(
-            "SELECT pembimbing1 FROM pembimbing WHERE pengajuan_id=?",
+            "SELECT dosen1 FROM pembimbing WHERE pengajuan_id=?",
             [pengajuan_id],
             async (err, result) => {
-                if (err) return res.status(500).json({ message: err.message });
+
+                if (err) {
+                    console.log(err);
+                    return res.status(500).json({
+                        message: err.message
+                    });
+                }
 
                 if (result.length === 0) {
-                    return res.json({
+                    return res.status(404).json({
                         message: "Pembimbing belum ditentukan"
                     });
                 }
 
-                const dosen = result[0].pembimbing1;
+                const dosen = result[0].dosen1;
 
                 await createBimbingan({
                     mahasiswa_id,
+                    pengajuan_id,
                     mahasiswa,
                     dosen,
                     topik,
@@ -51,32 +59,38 @@ export const addBimbingan = async (req, res) => {
                 res.json({
                     message: "Bimbingan berhasil dikirim"
                 });
-            }
-        );
+
+            });
 
     } catch (err) {
+
+        console.log(err);
+
         res.status(500).json({
             message: err.message
         });
     }
 };
 
-// ✅ GET
+// ================= GET =================
 export const getBimbingan = async (req, res) => {
     try {
         const data = await getAllBimbingan();
+
         res.json(data);
+
     } catch (err) {
-        console.log("ERROR Bimbingan:", err);
+
         res.status(500).json({
             message: err.message
         });
     }
 };
 
-// ✅ UPDATE (approve / revisi)
+// ================= UPDATE =================
 export const editBimbingan = async (req, res) => {
     try {
+
         const { feedback, status } = req.body;
 
         await updateBimbingan(
@@ -90,15 +104,17 @@ export const editBimbingan = async (req, res) => {
         });
 
     } catch (err) {
+
         res.status(500).json({
             message: err.message
         });
     }
 };
 
-// ✅ DELETE
+// ================= DELETE =================
 export const removeBimbingan = async (req, res) => {
     try {
+
         await deleteBimbingan(req.params.id);
 
         res.json({
@@ -106,6 +122,7 @@ export const removeBimbingan = async (req, res) => {
         });
 
     } catch (err) {
+
         res.status(500).json({
             message: err.message
         });

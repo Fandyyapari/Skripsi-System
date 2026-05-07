@@ -11,7 +11,6 @@ function Bimbingan({ role, username, onBack }) {
   const [activityLogs, setActivityLogs] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState("");
-  const [pengajuanId] = useState(1); // 🔥 sementara (nanti ambil dari pengajuan)
 
   useEffect(() => {
     loadData();
@@ -29,30 +28,47 @@ function Bimbingan({ role, username, onBack }) {
   };
 
   // ✅ TAMBAH
+  const user = JSON.parse(localStorage.getItem("user"));
+
   const handleSaveSession = async () => {
+
     const topik = document.getElementById("topik").value;
     const tanggal = document.getElementById("tanggal").value;
     const catatan = document.getElementById("catatan").value;
 
-    if (!topik || !tanggal) return alert("Isi dulu");
+    if (!topik || !tanggal) {
+      return alert("Isi data dulu");
+    }
 
-    const res = await fetch("http://localhost:5000/bimbingan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mahasiswa_id: 1,
-        mahasiswa: username,
-        pengajuan_id: pengajuanId, // 🔥 INI KUNCI
-        topik,
-        catatan,
-        tanggal
-      })
-    });
+    try {
 
-    const data = await res.json();
-    showToast(data.message);
-    setShowModal(false);
-    loadData();
+      const res = await fetch("http://localhost:5000/bimbingan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          mahasiswa_id: user.id,
+          pengajuan_id: 5,
+          mahasiswa: user.nama,
+          topik,
+          catatan,
+          tanggal
+        })
+      });
+
+      const data = await res.json();
+
+      showToast(data.message);
+
+      if (res.ok) {
+        setShowModal(false);
+        loadData();
+      }
+
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   // ✅ UPDATE
@@ -98,6 +114,7 @@ function Bimbingan({ role, username, onBack }) {
               <th>Topik</th>
               <th>Catatan</th>
               <th>Status</th>
+              <th>Dosen</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -109,7 +126,7 @@ function Bimbingan({ role, username, onBack }) {
                 <td>{item.topik}</td>
                 <td>{item.feedback || item.catatan}</td>
                 <td>{statusLabel(item.status)}</td>
-                <td>{item.pembimbing1 || "-"}</td>
+                <td>{item.dosen || "-"}</td>
                 <td>
                   {role === "dosen" && (
                     <>
