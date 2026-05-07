@@ -45,7 +45,9 @@ function Dashboard({
       "dokumen",
       "jadwal",
       "sidang",
-      "laporan"
+      "laporan",
+      "adminPembimbing",
+      "adminPenguji",
     ],
 
     kaprodi: [
@@ -64,7 +66,9 @@ function Dashboard({
     jadwal: "📅",
     dokumen: "📁",
     sidang: "🎓",
-    laporan: "📊"
+    laporan: "📊",
+    adminPembimbing: "👩‍🏫",
+    adminPenguji: "👨‍⚖️",
   };
 
   const menus = menuRole[role] || [];

@@ -214,17 +214,6 @@ function Login({ loginForm, onInputChange, onLoginSubmit, onQuickLogin }) {
           </button>
 
         </form>
-        {/* 🔥 FORM END */}
-
-        <div style={styles.demoWrapper}>
-          <p style={styles.demoText}>Demo cepat</p>
-          <div style={styles.demoBtns}>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("mahasiswa")}>Mahasiswa</div>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("dosen")}>Dosen</div>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("admin")}>Admin</div>
-            <div style={styles.demoBtn} onClick={() => onQuickLogin("kaprodi")}>Kaprodi</div>
-          </div>
-        </div>
 
       </div>
     </div>

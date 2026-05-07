@@ -3,11 +3,29 @@ import db from "../db.js";
 // =====================
 // GET ALL
 // =====================
+export const getAllPengajuan = () => {
+    return new Promise((resolve, reject) => {
+        db.query(
+            `SELECT p.*, u.username AS mahasiswa
+       FROM pengajuan p
+       JOIN users u ON p.mahasiswa_id = u.id
+       ORDER BY p.id DESC`,
+            (err, rows) => {
+                if (err) reject(err);
+                resolve(rows);
+            }
+        );
+    });
+};
+
+
+// GET ALL PENGAJUAN
 export const getPengajuan = (req, res) => {
     db.query(
         `SELECT p.*, u.nama 
-     FROM pengajuan p 
-     JOIN users u ON p.mahasiswa_id = u.id`,
+         FROM pengajuan p
+         JOIN users u ON p.mahasiswa_id = u.id
+         ORDER BY p.id DESC`,
         (err, rows) => {
             if (err) return res.status(500).json({ message: err.message });
             res.json(rows);

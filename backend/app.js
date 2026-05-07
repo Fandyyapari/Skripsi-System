@@ -8,6 +8,9 @@ import progressRoutes from "./routes/progressRoutes.js";
 import dokumenRoutes from "./routes/dokumenRoutes.js";
 import bimbinganRoutes from "./routes/bimbinganRoutes.js";
 import sidangRoutes from "./routes/sidangRoutes.js";
+import jadwalRoutes from "./routes/jadwalRoutes.js";
+import pembimbingRoutes from "./routes/pembimbingRoutes.js";
+import pengujiRoutes from "./routes/pengujiRoutes.js";
 import multer from "multer";
 import path from "path";
 
@@ -42,9 +45,12 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/pengajuan", pengajuanRoutes);
 app.use("/progress", progressRoutes);
+app.use("/jadwal", jadwalRoutes);
 app.use("/bimbingan", bimbinganRoutes);
 app.use("/sidang", sidangRoutes);
 app.use("/dokumen", dokumenRoutes);
+app.use("/pembimbing", pembimbingRoutes);
+app.use("/penguji", pengujiRoutes);
 
 app.post("/upload", upload.single("file"), (req, res) => {
   res.json({

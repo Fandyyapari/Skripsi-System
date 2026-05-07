@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 const statusLabel = (status) => {
   if (status === "pending") return "Menunggu";
-  if (status === "active") return "Aktif";
   if (status === "review") return "Revisi";
   if (status === "done") return "Selesai";
   return "-";
@@ -12,630 +11,152 @@ function Bimbingan({ role, username, onBack }) {
   const [activityLogs, setActivityLogs] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState("");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [pengajuanId] = useState(1); // 🔥 sementara (nanti ambil dari pengajuan)
 
   useEffect(() => {
-    fetch("http://localhost:3000/bimbingan")
-      .then((res) => res.json())
-      .then((data) => {
-        setActivityLogs(
-          Array.isArray(data)
-            ? data
-            : Array.isArray(data.logs)
-              ? data.logs
-              : []
-        );
-      })
-      .catch(() => {
-        setActivityLogs([]);
-      });
+    loadData();
   }, []);
 
-  const isMhs = role === "mahasiswa";
-  const isDosen = role === "dosen";  
-
-  const filteredLogs = activityLogs.filter((item) => {
-    const matchesSearch = item[1]
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
-
-    const matchesStatus =
-      !statusFilter || item[4] === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const showToast = (message) => {
-    setToast(message);
-
-    window.setTimeout(() => {
-      setToast("");
-    }, 2500);
+  const loadData = async () => {
+    const res = await fetch("http://localhost:5000/bimbingan");
+    const data = await res.json();
+    setActivityLogs(Array.isArray(data) ? data : []);
   };
 
-  const handleSaveSession = () => {
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2000);
+  };
+
+  // ✅ TAMBAH
+  const handleSaveSession = async () => {
+    const topik = document.getElementById("topik").value;
+    const tanggal = document.getElementById("tanggal").value;
+    const catatan = document.getElementById("catatan").value;
+
+    if (!topik || !tanggal) return alert("Isi dulu");
+
+    const res = await fetch("http://localhost:5000/bimbingan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mahasiswa_id: 1,
+        mahasiswa: username,
+        pengajuan_id: pengajuanId, // 🔥 INI KUNCI
+        topik,
+        catatan,
+        tanggal
+      })
+    });
+
+    const data = await res.json();
+    showToast(data.message);
     setShowModal(false);
-    showToast("Pengajuan bimbingan berhasil dibuat!");
+    loadData();
   };
+
+  // ✅ UPDATE
+  const updateStatus = async (id, status, feedback) => {
+    await fetch(`http://localhost:5000/bimbingan/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, feedback })
+    });
+
+    showToast("Update berhasil");
+    loadData();
+  };
+
+  // 🔥 FILTER ROLE
+  const filtered = activityLogs.filter((item) =>
+    role === "mahasiswa"
+      ? item.mahasiswa === username
+      : true
+  );
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0a1628",
-        color: "#fff",
-        padding: "24px",
-        fontFamily: "'DM Sans', sans-serif"
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto"
-        }}
-      >
-        {/* HEADER */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "12px",
-            marginBottom: "28px"
-          }}
-        >
-          <div>
-            <p
-              style={{
-                margin: 0,
-                color: "rgba(255,255,255,0.7)",
-                fontSize: "14px"
-              }}
-            >
-              Bimbingan — SKRIPSI UNESA
-            </p>
+    <div style={{ padding: 24, background: "#0a1628", minHeight: "100vh", color: "#fff" }}>
 
-            <h1
-              style={{
-                margin: "10px 0 0",
-                fontSize: "36px",
-                lineHeight: 1.1
-              }}
-            >
-              Sesi Bimbingan
-            </h1>
-
-            <p
-              style={{
-                margin: "10px 0 0",
-                color: "rgba(255,255,255,0.6)",
-                maxWidth: "720px"
-              }}
-            >
-              {isMhs
-                ? "Ajukan bimbingan dan pantau revisi dari dosen pembimbing."
-                : isDosen
-                  ? "Kelola aktivitas bimbingan mahasiswa dan berikan revisi."
-                  : "Monitoring seluruh aktivitas bimbingan mahasiswa."}
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              flexWrap: "wrap"
-            }}
-          >
-            <button
-              onClick={onBack}
-              style={{
-                padding: "12px 20px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "transparent",
-                color: "#fff",
-                cursor: "pointer"
-              }}
-            >
-              ← Kembali
-            </button>
-
-            {role === "mahasiswa" && (
-              <button
-                onClick={() => setShowModal(true)}
-                style={{
-                  padding: "12px 20px",
-                  borderRadius: "12px",
-                  border: "none",
-                  background: "#f0a500",
-                  color: "#0a1628",
-                  cursor: "pointer"
-                }}
-              >
-                ＋ Ajukan Bimbingan
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* CARD */}
-        <div
-          style={{
-            display: "grid",
-            gap: "20px",
-            marginBottom: "24px"
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "24px",
-              padding: "24px",
-              color: "#0f172a"
-            }}
-          >
-            <div
-              style={{
-                fontSize: "18px",
-                fontWeight: 700,
-                marginBottom: "16px"
-              }}
-            >
-              📊 Statistik Bimbingan
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "12px"
-              }}
-            >
-              {[
-                [
-                  activityLogs.length,
-                  "Total Sesi",
-                  "#0f172a"
-                ],
-                [
-                  activityLogs.filter(
-                    (item) => item[4] === "done"
-                  ).length,
-                  "Selesai",
-                  "#16a34a"
-                ],
-                [
-                  activityLogs.filter(
-                    (item) => item[4] === "review"
-                  ).length,
-                  "Revisi",
-                  "#f59e0b"
-                ],
-                [
-                  activityLogs.filter(
-                    (item) => item[4] === "pending"
-                  ).length,
-                  "Menunggu",
-                  "#0ea5e9"
-                ]
-              ].map(([value, label, color]) => (
-                <div
-                  key={label}
-                  style={{
-                    background: "#f8fafc",
-                    borderRadius: "16px",
-                    padding: "18px",
-                    textAlign: "center"
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: 800,
-                      color
-                    }}
-                  >
-                    {value}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "#64748b",
-                      marginTop: "6px"
-                    }}
-                  >
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* FILTER */}
-        <div
-          style={{
-            fontSize: "24px",
-            fontWeight: 700,
-            marginBottom: "16px"
-          }}
-        >
-          Log{" "}
-          <span style={{ color: "#f0a500" }}>
-            Aktivitas Bimbingan
-          </span>
-        </div>
-
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: "24px",
-            padding: "24px"
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
-              marginBottom: "20px"
-            }}
-          >
-            <div
-              style={{
-                fontSize: "16px",
-                fontWeight: 700,
-                color: "#0f172a"
-              }}
-            >
-              Riwayat Bimbingan
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-                width: "100%"
-              }}
-            >
-              <select
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value)
-                }
-                style={{
-                  minWidth: "180px",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  border: "1px solid #cbd5e1",
-                  background: "#f8fafc",
-                  color: "#0f172a"
-                }}
-              >
-                <option value="">Semua Status</option>
-                <option value="pending">
-                  Menunggu
-                </option>
-                <option value="active">Aktif</option>
-                <option value="review">Revisi</option>
-                <option value="done">Selesai</option>
-              </select>
-
-              <input
-                placeholder="🔍 Cari mahasiswa..."
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-                style={{
-                  flex: 1,
-                  minWidth: "220px",
-                  padding: "12px 14px",
-                  borderRadius: "12px",
-                  border: "1px solid #cbd5e1",
-                  background: "#f8fafc",
-                  color: "#0f172a"
-                }}
-              />
-            </div>
-          </div>
-
-          {/* TABLE */}
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                minWidth: "980px"
-              }}
-            >
-              <thead>
-                <tr
-                  style={{
-                    textAlign: "left",
-                    color: "#64748b",
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em"
-                  }}
-                >
-                  <th style={{ padding: "14px 12px" }}>
-                    Tanggal
-                  </th>
-
-                  <th style={{ padding: "14px 12px" }}>
-                    Mahasiswa
-                  </th>
-
-                  <th style={{ padding: "14px 12px" }}>
-                    Topik
-                  </th>
-
-                  <th style={{ padding: "14px 12px" }}>
-                    Catatan Dosen
-                  </th>
-
-                  <th style={{ padding: "14px 12px" }}>
-                    Status
-                  </th>
-
-                  <th style={{ padding: "14px 12px" }}>
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredLogs.map(
-                  ([date, name, topic, note, status]) => (
-                    <tr
-                      key={`${date}-${name}`}
-                      style={{
-                        borderTop:
-                          "1px solid #e2e8f0"
-                      }}
-                    >
-                      <td
-                        style={{
-                          padding: "16px 12px",
-                          fontSize: "13px",
-                          color: "#475569"
-                        }}
-                      >
-                        {date}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: "16px 12px",
-                          fontWeight: 600,
-                          color: "#0f172a"
-                        }}
-                      >
-                        {name}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: "16px 12px",
-                          color: "#0f172a"
-                        }}
-                      >
-                        {topic}
-                      </td>
-
-                      <td
-                        style={{
-                          padding: "16px 12px",
-                          fontSize: "13px",
-                          color: "#64748b"
-                        }}
-                      >
-                        {note}
-                      </td>
-
-                      <td style={{ padding: "16px 12px" }}>
-                        <span
-                          style={{
-                            padding: "6px 12px",
-                            borderRadius: "999px",
-                            background:
-                              status === "done"
-                                ? "rgba(22,163,74,0.15)"
-                                : status === "active"
-                                  ? "rgba(240,165,0,0.15)"
-                                  : status === "review"
-                                    ? "rgba(59,130,246,0.15)"
-                                    : "rgba(243,244,246,1)",
-
-                            color:
-                              status === "done"
-                                ? "#16a34a"
-                                : status === "active"
-                                  ? "#f59e0b"
-                                  : status === "review"
-                                    ? "#2563eb"
-                                    : "#0f172a"
-                          }}
-                        >
-                          {statusLabel(status)}
-                        </span>
-                      </td>
-
-                      {/* ACTION */}
-                      <td style={{ padding: "16px 12px" }}>
-                        {role === "dosen" && (
-                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-
-                            {status !== "done" && (
-                              <button
-                                onClick={() => showToast("Status berhasil diperbarui")}
-                                style={{
-                                  padding: "10px 14px",
-                                  borderRadius: "12px",
-                                  border: "none",
-                                  background: "#16a34a",
-                                  color: "#fff",
-                                  cursor: "pointer"
-                                }}
-                              >
-                                ✓ Setuju
-                              </button>
-                            )}
-
-                            <button
-                              onClick={() => showToast("Catatan berhasil dikirim")}
-                              style={{
-                                padding: "10px 14px",
-                                borderRadius: "12px",
-                                border: "none",
-                                background: "#94a3b8",
-                                color: "#fff",
-                                cursor: "pointer"
-                              }}
-                            >
-                              💬
-                            </button>
-
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <h2>Bimbingan</h2>
+        <div>
+          <button onClick={onBack}>← Kembali</button>
+          {role === "mahasiswa" && (
+            <button onClick={() => setShowModal(true)}>+ Ajukan</button>
+          )}
         </div>
       </div>
 
-      {/* TOAST */}
-      {toast && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            background: "rgba(15,23,42,0.92)",
-            color: "#fff",
-            padding: "16px 20px",
-            borderRadius: "18px",
-            boxShadow:
-              "0 24px 60px rgba(0,0,0,0.2)",
-            zIndex: 20
-          }}
-        >
-          {toast}
-        </div>
-      )}
+      {/* TABLE */}
+      <div style={{ background: "#fff", color: "#000", marginTop: 20, padding: 20 }}>
+        <table width="100%">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Mahasiswa</th>
+              <th>Topik</th>
+              <th>Catatan</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => (
+              <tr key={item.id}>
+                <td>{item.tanggal}</td>
+                <td>{item.mahasiswa}</td>
+                <td>{item.topik}</td>
+                <td>{item.feedback || item.catatan}</td>
+                <td>{statusLabel(item.status)}</td>
+                <td>{item.pembimbing1 || "-"}</td>
+                <td>
+                  {role === "dosen" && (
+                    <>
+                      {item.status !== "done" && (
+                        <button onClick={() => updateStatus(item.id, "done", "Disetujui")}>
+                          ✓
+                        </button>
+                      )}
+                      <button onClick={() => updateStatus(item.id, "review", "Revisi")}>
+                        ✎
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* MODAL */}
       {showModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(10,22,40,0.75)",
-            zIndex: 50,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px"
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "620px",
-              background: "#fff",
-              color: "#0f172a",
-              borderRadius: "24px",
-              padding: "28px"
-            }}
-          >
-            <h2>💬 Ajukan Bimbingan</h2>
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.6)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
+        }}>
+          <div style={{ background: "#fff", padding: 20, borderRadius: 12 }}>
+            <h3>Ajukan Bimbingan</h3>
 
-            <div
-              style={{
-                display: "grid",
-                gap: "16px",
-                marginTop: "20px"
-              }}
-            >
-              <input
-                placeholder="Topik bimbingan..."
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  border: "1px solid #cbd5e1"
-                }}
-              />
+            <input id="topik" placeholder="Topik" /><br />
+            <input id="tanggal" type="date" /><br />
+            <textarea id="catatan" placeholder="Catatan" /><br />
 
-              <input
-                type="date"
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  border: "1px solid #cbd5e1"
-                }}
-              />
-
-              <textarea
-                rows="4"
-                placeholder="Catatan tambahan..."
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  border: "1px solid #cbd5e1"
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "12px",
-                marginTop: "24px"
-              }}
-            >
-              <button
-                onClick={() =>
-                  setShowModal(false)
-                }
-                style={{
-                  padding: "12px 18px",
-                  borderRadius: "12px",
-                  border: "1px solid #cbd5e1",
-                  background: "transparent",
-                  cursor: "pointer"
-                }}
-              >
-                Batal
-              </button>
-
-              <button
-                onClick={handleSaveSession}
-                style={{
-                  padding: "12px 18px",
-                  borderRadius: "12px",
-                  border: "none",
-                  background: "#0f172a",
-                  color: "#fff",
-                  cursor: "pointer"
-                }}
-              >
-                Simpan
-              </button>
-            </div>
+            <button onClick={() => setShowModal(false)}>Batal</button>
+            <button onClick={handleSaveSession}>Simpan</button>
           </div>
+        </div>
+      )}
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 20, right: 20 }}>
+          {toast}
         </div>
       )}
     </div>

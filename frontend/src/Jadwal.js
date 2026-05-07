@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-
+import {useMemo, useState } from "react";
 function Jadwal({ role, onBack }) {
   const API = "http://localhost:5000";
 
@@ -11,42 +10,43 @@ function Jadwal({ role, onBack }) {
     mahasiswa: "",
     tanggal: "",
     jam_mulai: "",
-    jam_selesai: ""
+    jam_selesai: "",
+    kegiatan: "bimbingan",
+    ruangan: ""
   });
 
-  const token = localStorage.getItem("token");
-
   // GET DATA
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`${API}/jadwal`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`${API}/jadwal`);
+      const data = await res.json();
 
-        const data = await res.json();
+      console.log("DATA JADWAL:", data); // 🔥 DEBUG
+
+      // ✅ pastikan selalu array
+      if (Array.isArray(data)) {
         setJadwal(data);
-
-      } catch (err) {
-        console.log(err);
+      } else if (Array.isArray(data.data)) {
+        setJadwal(data.data);
+      } else {
+        setJadwal([]); // fallback biar ga error
       }
-    };
 
-    fetchData();
-
-  }, [API, token]);
-
+    } catch (err) {
+      console.log(err);
+      setJadwal([]); // fallback
+    }
+  };
 
   // FILTER
   const filtered = useMemo(() => {
+    if (!Array.isArray(jadwal)) return [];
+
     return jadwal.filter((j) =>
       j.mahasiswa?.toLowerCase().includes(search.toLowerCase())
     );
   }, [jadwal, search]);
 
-  // INPUT
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -58,35 +58,20 @@ function Jadwal({ role, onBack }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const res = await fetch(`${API}/jadwal`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(form)
-      });
+    const res = await fetch(`${API}/jadwal`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(form)
+    });
 
-      const result = await res.json();
+    const result = await res.json();
+    alert(result.message);
 
-      alert(result.message);
-
-      if (res.ok) {
-        setShowModal(false);
-
-        setForm({
-          mahasiswa: "",
-          tanggal: "",
-          jam_mulai: "",
-          jam_selesai: ""
-        });
-
-        window.location.reload();
-      }
-
-    } catch (err) {
-      console.log(err);
+    if (res.ok) {
+      setShowModal(false);
+      fetchData();
     }
   };
 
@@ -94,128 +79,82 @@ function Jadwal({ role, onBack }) {
   const handleDelete = async (id) => {
     if (!window.confirm("Hapus jadwal?")) return;
 
-    try {
-      const res = await fetch(`${API}/jadwal/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+    await fetch(`${API}/jadwal/${id}`, {
+      method: "DELETE"
+    });
 
-      const result = await res.json();
-
-      alert(result.message);
-
-      window.location.reload();
-
-    } catch (err) {
-      console.log(err);
-    }
+    fetchData();
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0a1628",
-        padding: "24px",
-        color: "#fff"
-      }}
-    >
-      {/* HEADER */}
-      <div style={header}>
-        <div>
-          <p style={sub}>
-            Sistem Skripsi UNESA
-          </p>
+    <div style={page}>
+      <div style={container}>
 
-          <h1>
-            Jadwal Bimbingan & Sidang
-          </h1>
+        {/* HEADER */}
+        <div style={header}>
+          <div>
+            <p style={sub}>Sistem Skripsi</p>
+            <h1>📅 Jadwal Bimbingan & Sidang</h1>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={onBack} style={btnBack}>
+              ← Kembali
+            </button>
+
+            {role === "admin" && (
+              <button onClick={() => setShowModal(true)} style={btnAdd}>
+                + Tambah
+              </button>
+            )}
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={onBack} style={btnBack}>
-            ← Kembali
-          </button>
+        {/* SEARCH */}
+        <input
+          placeholder="🔍 Cari mahasiswa..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={input}
+        />
 
-          {role === "admin" && (
-            <button
-              onClick={() => setShowModal(true)}
-              style={btnAdd}
-            >
-              + Tambah Jadwal
-            </button>
+        {/* LIST */}
+        <div style={{ marginTop: "20px" }}>
+          {filtered.length === 0 ? (
+            <div style={emptyBox}>Belum ada jadwal 📭</div>
+          ) : (
+            filtered.map((j) => (
+              <div key={j.id} style={itemCard}>
+
+                <div>
+                  <h3>{j.mahasiswa}</h3>
+
+                  <p style={text}>📅 {j.tanggal}</p>
+                  <p style={text}>🕒 {j.jam_mulai} - {j.jam_selesai}</p>
+                  <p style={text}>📍 {j.ruangan || "-"}</p>
+
+                  <span style={{
+                    ...badge,
+                    background:
+                      j.kegiatan === "sidang" ? "#ef4444" : "#22c55e"
+                  }}>
+                    {j.kegiatan}
+                  </span>
+                </div>
+
+                {role === "admin" && (
+                  <button
+                    onClick={() => handleDelete(j.id)}
+                    style={btnDelete}
+                  >
+                    Hapus
+                  </button>
+                )}
+
+              </div>
+            ))
           )}
         </div>
-      </div>
-
-      {/* CARD */}
-      <div style={cardGrid}>
-        <div style={card}>
-          <p>Total Jadwal</p>
-          <h2>{jadwal.length}</h2>
-        </div>
-
-        <div style={card}>
-          <p>Jadwal Hari Ini</p>
-          <h2>
-            {
-              jadwal.filter(
-                (j) =>
-                  j.tanggal ===
-                  new Date().toISOString().split("T")[0]
-              ).length
-            }
-          </h2>
-        </div>
-      </div>
-
-      {/* SEARCH */}
-      <input
-        type="text"
-        placeholder="🔍 Cari mahasiswa..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={input}
-      />
-
-      {/* LIST */}
-      <div style={{ marginTop: "24px" }}>
-        {filtered.length === 0 ? (
-          <div style={emptyBox}>
-            Belum ada jadwal 📭
-          </div>
-        ) : (
-          filtered.map((j) => (
-            <div key={j.id} style={itemCard}>
-
-              <div>
-                <h3 style={{ margin: 0 }}>
-                  {j.mahasiswa}
-                </h3>
-
-                <p style={text}>
-                  📅 {j.tanggal}
-                </p>
-
-                <p style={text}>
-                  🕒 {j.jam_mulai} - {j.jam_selesai}
-                </p>
-              </div>
-
-              {role === "admin" && (
-                <button
-                  onClick={() => handleDelete(j.id)}
-                  style={btnDelete}
-                >
-                  Hapus
-                </button>
-              )}
-
-            </div>
-          ))
-        )}
       </div>
 
       {/* MODAL */}
@@ -225,71 +164,51 @@ function Jadwal({ role, onBack }) {
 
             <h2>Tambah Jadwal</h2>
 
-            <form
-              onSubmit={handleSubmit}
-              style={formStyle}
-            >
+            <form onSubmit={handleSubmit} style={formStyle}>
 
-              <input
-                type="text"
-                name="mahasiswa"
-                placeholder="Nama Mahasiswa"
+              <input name="mahasiswa" placeholder="Nama"
                 value={form.mahasiswa}
                 onChange={handleChange}
-                style={modalInput}
-                required
-              />
+                style={modalInput} required />
 
-              <input
-                type="date"
-                name="tanggal"
+              <select name="kegiatan"
+                value={form.kegiatan}
+                onChange={handleChange}
+                style={modalInput}>
+                <option value="bimbingan">Bimbingan</option>
+                <option value="sidang">Sidang</option>
+              </select>
+
+              <input name="ruangan" placeholder="Ruangan"
+                value={form.ruangan}
+                onChange={handleChange}
+                style={modalInput} />
+
+              <input type="date" name="tanggal"
                 value={form.tanggal}
                 onChange={handleChange}
-                style={modalInput}
-                required
-              />
+                style={modalInput} required />
 
-              <input
-                type="time"
-                name="jam_mulai"
+              <input type="time" name="jam_mulai"
                 value={form.jam_mulai}
                 onChange={handleChange}
-                style={modalInput}
-                required
-              />
+                style={modalInput} required />
 
-              <input
-                type="time"
-                name="jam_selesai"
+              <input type="time" name="jam_selesai"
                 value={form.jam_selesai}
                 onChange={handleChange}
-                style={modalInput}
-                required
-              />
+                style={modalInput} required />
 
-              <div style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "12px"
-              }}>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  style={btnCancel}
-                >
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button type="button" onClick={() => setShowModal(false)} style={btnCancel}>
                   Batal
                 </button>
-
-                <button
-                  type="submit"
-                  style={btnSave}
-                >
+                <button type="submit" style={btnSave}>
                   Simpan
                 </button>
               </div>
 
             </form>
-
           </div>
         </div>
       )}
@@ -297,78 +216,88 @@ function Jadwal({ role, onBack }) {
   );
 }
 
-/* STYLE */
+/* 🎨 STYLE */
+
+const page = {
+  minHeight: "100vh",
+  background: "linear-gradient(135deg,#0a1628,#0f1e3a)",
+  padding: "24px",
+  color: "#fff"
+};
+
+const container = {
+  maxWidth: "1000px",
+  margin: "0 auto"
+};
 
 const header = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: "28px",
-  flexWrap: "wrap",
-  gap: "12px"
+  marginBottom: "20px"
 };
 
 const sub = {
   color: "rgba(255,255,255,0.6)"
 };
 
-const btnBack = {
-  padding: "12px 18px",
-  border: "none",
-  borderRadius: "12px",
-  cursor: "pointer"
-};
-
-const btnAdd = {
-  padding: "12px 18px",
-  border: "none",
-  borderRadius: "12px",
-  background: "#f0a500",
-  color: "#000",
-  cursor: "pointer",
-  fontWeight: "bold"
-};
-
-const cardGrid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-  gap: "16px",
-  marginBottom: "24px"
-};
-
-const card = {
-  background: "#fff",
-  color: "#000",
-  padding: "24px",
-  borderRadius: "20px"
-};
-
 const input = {
   width: "100%",
   padding: "14px",
-  borderRadius: "12px",
-  border: "1px solid #cbd5e1"
+  borderRadius: "14px",
+  border: "none",
+  outline: "none"
 };
 
 const itemCard = {
   background: "#fff",
   color: "#000",
   padding: "20px",
-  borderRadius: "20px",
-  marginBottom: "16px",
+  borderRadius: "18px",
+  marginBottom: "14px",
   display: "flex",
   justifyContent: "space-between",
-  alignItems: "center"
+  alignItems: "center",
+  transition: "0.2s",
+  boxShadow: "0 10px 25px rgba(0,0,0,0.1)"
 };
 
 const text = {
   color: "#64748b"
 };
 
-const btnDelete = {
-  padding: "10px 14px",
+const badge = {
+  padding: "6px 12px",
+  borderRadius: "999px",
+  color: "#fff",
+  fontSize: "12px",
+  marginTop: "6px",
+  display: "inline-block"
+};
+
+const btnBack = {
+  padding: "10px 16px",
+  borderRadius: "12px",
   border: "none",
+  background: "#1e293b",
+  color: "#fff",
+  cursor: "pointer"
+};
+
+const btnAdd = {
+  padding: "10px 16px",
+  borderRadius: "12px",
+  border: "none",
+  background: "#f0a500",
+  color: "#000",
+  cursor: "pointer",
+  fontWeight: "bold"
+};
+
+const btnDelete = {
+  padding: "8px 14px",
   borderRadius: "10px",
+  border: "none",
   background: "#ef4444",
   color: "#fff",
   cursor: "pointer"
@@ -385,7 +314,7 @@ const emptyBox = {
 const overlay = {
   position: "fixed",
   inset: 0,
-  background: "rgba(0,0,0,0.5)",
+  background: "rgba(0,0,0,0.6)",
   display: "flex",
   justifyContent: "center",
   alignItems: "center"
@@ -395,35 +324,34 @@ const modal = {
   background: "#fff",
   color: "#000",
   padding: "28px",
-  borderRadius: "24px",
+  borderRadius: "20px",
   width: "100%",
-  maxWidth: "500px"
+  maxWidth: "420px"
 };
 
 const formStyle = {
   display: "grid",
-  gap: "14px",
-  marginTop: "20px"
+  gap: "12px",
+  marginTop: "16px"
 };
 
 const modalInput = {
-  padding: "14px",
-  borderRadius: "12px",
-  border: "1px solid #cbd5e1"
+  padding: "12px",
+  borderRadius: "10px",
+  border: "1px solid #ddd"
 };
 
 const btnCancel = {
-  padding: "12px 18px",
-  border: "1px solid #cbd5e1",
-  borderRadius: "12px",
-  background: "transparent",
+  padding: "10px 14px",
+  borderRadius: "10px",
+  border: "1px solid #ccc",
   cursor: "pointer"
 };
 
 const btnSave = {
-  padding: "12px 18px",
+  padding: "10px 14px",
+  borderRadius: "10px",
   border: "none",
-  borderRadius: "12px",
   background: "#0f172a",
   color: "#fff",
   cursor: "pointer"

@@ -8,7 +8,7 @@ import {
 
 const router = express.Router();
 
-router.get("/", getPengajuan);
+router.get("/",  getPengajuan);
 router.post("/", createPengajuan);
 router.put("/:id", updateStatus);
 router.delete("/:id", deletePengajuan);

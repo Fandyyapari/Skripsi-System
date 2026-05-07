@@ -2,42 +2,73 @@ import db from "../db.js";
 
 export const getAllJadwal = () => {
   return new Promise((resolve, reject) => {
-    db.query("SELECT * FROM jadwal ORDER BY tanggal, jam_mulai", (err, rows) => {
-      if (err) reject(err);
-      resolve(rows);
-    });
+    db.query(
+      "SELECT * FROM jadwal ORDER BY tanggal, jam_mulai",
+      (err, rows) => {
+        if (err) reject(err);
+        resolve(rows);
+      }
+    );
   });
 };
 
 export const createJadwal = (data) => {
   return new Promise((resolve, reject) => {
-    const { mahasiswa, tanggal, jam_mulai, jam_selesai } = data;
+    const {
+      mahasiswa,
+      tanggal,
+      jam_mulai,
+      jam_selesai,
+      kegiatan,
+      ruangan
+    } = data;
 
-    db.query("SELECT * FROM jadwal WHERE tanggal = ?", [tanggal], (err, rows) => {
-      if (err) return reject(err);
+    db.query(
+      "SELECT * FROM jadwal WHERE tanggal = ?",
+      [tanggal],
+      (err, rows) => {
+        if (err) return reject(err);
 
-      const bentrok = rows.some(j =>
-        jam_mulai < j.jam_selesai &&
-        jam_selesai > j.jam_mulai
-      );
+        const bentrok = rows.some(
+          (j) =>
+            jam_mulai < j.jam_selesai &&
+            jam_selesai > j.jam_mulai
+        );
 
-      if (bentrok) return reject(new Error("❌ Jadwal bentrok!"));
+        if (bentrok) return reject(new Error("❌ Jadwal bentrok!"));
 
-      db.query(
-        "INSERT INTO jadwal (mahasiswa, tanggal, jam_mulai, jam_selesai) VALUES (?,?,?,?)",
-        [mahasiswa, tanggal, jam_mulai, jam_selesai],
-        (err) => {
-          if (err) reject(err);
-          resolve();
-        }
-      );
-    });
+        db.query(
+          `INSERT INTO jadwal 
+          (mahasiswa, tanggal, jam_mulai, jam_selesai, kegiatan, ruangan) 
+          VALUES (?,?,?,?,?,?)`,
+          [
+            mahasiswa,
+            tanggal,
+            jam_mulai,
+            jam_selesai,
+            kegiatan,
+            ruangan
+          ],
+          (err) => {
+            if (err) reject(err);
+            resolve();
+          }
+        );
+      }
+    );
   });
 };
 
 export const updateJadwal = (id, data) => {
   return new Promise((resolve, reject) => {
-    const { mahasiswa, tanggal, jam_mulai, jam_selesai } = data;
+    const {
+      mahasiswa,
+      tanggal,
+      jam_mulai,
+      jam_selesai,
+      kegiatan,
+      ruangan
+    } = data;
 
     db.query(
       "SELECT * FROM jadwal WHERE tanggal = ? AND id != ?",
@@ -45,16 +76,27 @@ export const updateJadwal = (id, data) => {
       (err, rows) => {
         if (err) return reject(err);
 
-        const bentrok = rows.some(j =>
-          jam_mulai < j.jam_selesai &&
-          jam_selesai > j.jam_mulai
+        const bentrok = rows.some(
+          (j) =>
+            jam_mulai < j.jam_selesai &&
+            jam_selesai > j.jam_mulai
         );
 
         if (bentrok) return reject(new Error("❌ Jadwal bentrok!"));
 
         db.query(
-          "UPDATE jadwal SET mahasiswa=?, tanggal=?, jam_mulai=?, jam_selesai=? WHERE id=?",
-          [mahasiswa, tanggal, jam_mulai, jam_selesai, id],
+          `UPDATE jadwal 
+           SET mahasiswa=?, tanggal=?, jam_mulai=?, jam_selesai=?, kegiatan=?, ruangan=? 
+           WHERE id=?`,
+          [
+            mahasiswa,
+            tanggal,
+            jam_mulai,
+            jam_selesai,
+            kegiatan,
+            ruangan,
+            id
+          ],
           (err) => {
             if (err) reject(err);
             resolve();
@@ -67,9 +109,13 @@ export const updateJadwal = (id, data) => {
 
 export const deleteJadwal = (id) => {
   return new Promise((resolve, reject) => {
-    db.query("DELETE FROM jadwal WHERE id = ?", [id], (err) => {
-      if (err) reject(err);
-      resolve();
-    });
+    db.query(
+      "DELETE FROM jadwal WHERE id=?",
+      [id],
+      (err) => {
+        if (err) reject(err);
+        resolve();
+      }
+    );
   });
 };

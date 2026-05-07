@@ -9,6 +9,8 @@ import Progress from "./Progress";
 import Laporan from "./Laporan";
 import Pengguna from "./Pengguna";
 import Sidang from "./Sidang";
+import AdminPembimbing from "./AdminPembimbing";
+import AdminPenguji from "./AdminPenguji";
 
 function App() {
   const API = "http://localhost:5000";
@@ -323,6 +325,26 @@ function App() {
       />
     );
 
+  if (page === "adminPembimbing") {
+    return (
+      <AdminPembimbing
+        role={userRole}
+        username={userName}
+        onBack={() => handleNavigate("dashboard")}
+      />
+    );
+  }
+
+  if (page === "adminPenguji") {
+    return (
+      <AdminPenguji
+        role={userRole}
+        username={userName}
+        onBack={() => handleNavigate("dashboard")}
+      />
+    );
+  }
+  
   return (
     <Dashboard
       username={userName}
